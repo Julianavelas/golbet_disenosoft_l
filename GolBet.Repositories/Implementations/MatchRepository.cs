@@ -9,9 +9,12 @@ namespace GolBet.Repositories.Implementations;
 
 public class MatchRepository : GenericRepository<Match>, IMatchRepository
 {
+    // Case-insensitive and accent-insensitive, so "america" and "América" match the same team.
+    private const string SearchCollation = "Latin1_General_CI_AI";
+
     public MatchRepository(AppDbContext context) : base(context) { }
 
-    public async Task<IEnumerable<Match>> GetAllWithTeamsAsync(MatchStatus? status = null)
+    public async Task<IEnumerable<Match>> GetAllWithTeamsAsync(MatchStatus? status = null, string? search = null)
     {
         var query = _dbSet
             .Include(m => m.HomeTeam)
@@ -22,6 +25,14 @@ public class MatchRepository : GenericRepository<Match>, IMatchRepository
 
         if (status.HasValue)
             query = query.Where(m => m.Status == status.Value);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            query = query.Where(m =>
+                EF.Functions.Collate(m.HomeTeam.Name, SearchCollation).Contains(term) ||
+                EF.Functions.Collate(m.AwayTeam.Name, SearchCollation).Contains(term));
+        }
 
         return await query.OrderBy(m => m.Date).ToListAsync();
     }
