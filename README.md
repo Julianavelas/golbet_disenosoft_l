@@ -1,2 +1,2 @@
 # golbet_disenosoft_l
-Aplicación GolBet de Deseño de Software
+Aplicación GolBet de Diseño de Software
